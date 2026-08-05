@@ -119,7 +119,7 @@ async def on_ready():
         """Pass messages to chat bridge"""
         # Message is from chat bridge
         if msg.channel.id == config["chat_bridge_channel"]:
-            bridge.discord_msg(msg)
+            await bridge.discord_msg(msg)
 
 # Start Discord client
 client.run(config["bot_token"])

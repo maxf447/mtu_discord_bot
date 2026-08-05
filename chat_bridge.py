@@ -49,13 +49,30 @@ class ChatBridge:
 
             self._bridge_webhook.send(line)
 
-    def discord_msg(self, msg):
+    async def discord_msg(self, msg):
         """Discord message in chat bridge channel"""
         # No bot or empty messages
         if msg.author.bot or len(msg.clean_content) == 0:
             return
 
-        self._rcon.tellraw({"text": msg.clean_content})
+        # Generate tellraw for message
+        msg_tellraw = [
+            {"text": "[", "color": "white"},
+            {"text": msg.author.display_name, "color": "blue"},
+            {"text": "] " + msg.clean_content},
+        ]
+
+        # Message is a reply, fetch reply and add to tellraw
+        if msg.reference is not None:
+            replied_msg = await msg.channel.fetch_message(msg.reference.message_id)
+            replied_name = replied_msg.author.display_name
+            replied_content = replied_msg.clean_content
+
+            msg_tellraw = [
+                {"text": f"┌ [{replied_name}] {replied_content}\n", "color": "gray"}
+            ] + msg_tellraw
+
+        self._rcon.tellraw(msg_tellraw)
 
 # Small event handler for file system update
 class Handler(FileSystemEventHandler):
