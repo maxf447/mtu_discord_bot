@@ -33,6 +33,10 @@ class RCONServer:
         """Send a message from tellraw JSON in the chat"""
         self._run_command("tellraw @a " + json.dumps(data))
 
+    def reload_whitelist(self):
+        """Reload the server whitelist"""
+        self._run_command("whitelist reload")
+
     # Run command, attempting to reconnect if necessary
     def _run_command(self, command):
         # Attempt to run command
