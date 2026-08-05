@@ -89,6 +89,10 @@ class ChatBridge:
             self._bridge_webhook.send(msg_clean, username = "Server",
                 allowed_mentions = discord.AllowedMentions.none())
 
+        # Special case for this one insane death message
+        elif msg == "death.fell.accident.water":
+            self._bridge_webhook.send("death.fell.accident.water", username = "Server")
+
     async def discord_msg(self, msg):
         """Discord message in chat bridge channel"""
         # No bot or empty messages
