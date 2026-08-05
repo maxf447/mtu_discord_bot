@@ -9,6 +9,7 @@ import discord
 import status
 import rcon_server
 import chat_bridge
+import whitelist
 
 # Load the bot config file
 path = os.path.join(os.path.dirname(__file__), "config.json")
@@ -23,6 +24,15 @@ rcon = rcon_server.RCONServer(config["rcon_password"], config["rcon_port"])
 
 # Initialize the server status message system
 server_status = status.Status(rcon)
+
+# Start chat bridge service
+bridge_webhook = discord.SyncWebhook.from_url(config["chat_bridge_webhook"])
+bridge = chat_bridge.ChatBridge(config["log_file_path"],
+    bridge_webhook, rcon, config["message_filter"])
+
+# Start whitelist service
+whitelist = whitelist.Whitelist(config["whitelist_file_path"], config["whitelist_db_path"],
+    config["max_whitelist"], rcon)
 
 # Create slash commands
 tree = discord.app_commands.CommandTree(client)
@@ -87,16 +97,17 @@ async def status_msg(intr: discord.Interaction):
 tree.add_command(user_group)
 tree.add_command(admin_group)
 
-PREPARED = False
+# Assign chat bridge to on_message event
+@client.event
+async def on_message(msg):
+    """Pass messages to chat bridge"""
+    # Message is from chat bridge
+    if msg.channel.id == config["chat_bridge_channel"]:
+        await bridge.discord_msg(msg)
+
 @client.event
 async def on_ready():
     """Initialize things once bot is loaded"""
-
-    # Don't run more than once
-    global PREPARED
-    if PREPARED:
-        return
-    PREPARED = True
 
     # Register slash commands
     # await tree.sync(guild = discord.Object(id = config["guild_id"]))
@@ -108,19 +119,6 @@ async def on_ready():
 
     # Start server status loop
     server_status.start_loop(status_channel, status_webhook)
-
-    # Start chat bridge
-    bridge_webhook = discord.SyncWebhook.from_url(config["chat_bridge_webhook"])
-    bridge = chat_bridge.ChatBridge(config["log_file_path"],
-        bridge_webhook, rcon, config["message_filter"])
-
-    # Assign chat bridge to on_message event
-    @client.event
-    async def on_message(msg):
-        """Pass messages to chat bridge"""
-        # Message is from chat bridge
-        if msg.channel.id == config["chat_bridge_channel"]:
-            await bridge.discord_msg(msg)
 
 # Start Discord client
 client.run(config["bot_token"])

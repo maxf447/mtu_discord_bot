@@ -15,6 +15,7 @@ class Status:
         self._webhook = None
         self._msg = None
         self._content = None
+        self._started = False
 
     async def _update_loop(self):
         """Runs the loop to update the status message"""
@@ -124,6 +125,11 @@ class Status:
 
     def start_loop(self, status_channel, status_webhook):
         """Start running the async loop that updates the status"""
+        # Don't start status loop multiple times
+        if self._started:
+            return
+        self._started = True
+
         self._channel = status_channel
         self._webhook = status_webhook
         asyncio.create_task(self._update_loop())
