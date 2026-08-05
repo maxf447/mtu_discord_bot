@@ -8,9 +8,9 @@ import discord
 class Status:
     """Class to fetch and update status messages"""
 
-    def __init__(self, server):
+    def __init__(self, rcon):
         # Doesn't start the status update loop until start_loop is called
-        self._server = server
+        self._rcon = rcon
         self._channel = None
         self._webhook = None
         self._msg = None
@@ -75,8 +75,8 @@ class Status:
 
     def get_status(self):
         """Generate an embed with the server status information"""
-        player_list = self._server.get_players()
-        mspt = self._server.get_mspt()
+        player_list = self._rcon.get_players()
+        mspt = self._rcon.get_mspt()
         memory = self._get_memory()
         disk = self._get_disk()
         power = self._get_power()

@@ -8,6 +8,7 @@ import discord
 
 import status
 import rcon_server
+import chat_bridge
 
 # Load the bot config file
 path = os.path.join(os.path.dirname(__file__), "config.json")
@@ -18,10 +19,10 @@ with open(path, "r", encoding = "utf-8") as f:
 client = discord.Client(intents = discord.Intents.all())
 
 # Start RCON communication with the server
-comm = rcon_server.RCONServer(config["rcon_password"], config["rcon_port"])
+rcon = rcon_server.RCONServer(config["rcon_password"], config["rcon_port"])
 
 # Initialize the server status message system
-server_status = status.Status(comm)
+server_status = status.Status(rcon)
 
 # Create slash commands
 tree = discord.app_commands.CommandTree(client)
@@ -98,8 +99,20 @@ async def on_ready():
     status_channel = client.get_channel(config["status_channel"])
     status_webhook = discord.Webhook.from_url(
         config["status_webhook"],session = aiohttp.ClientSession())
+
     # Start server status loop
     server_status.start_loop(status_channel, status_webhook)
+
+    # Start chat bridge
+    bridge = chat_bridge.ChatBridge(config["log_file_path"])
+
+    # Assign chat bridge to on_message event
+    @client.event
+    async def on_message(msg):
+        """Pass messages to chat bridge"""
+        # Message is from chat bridge
+        if msg.channel.id == config["chat_bridge_channel"]:
+            bridge.discord_msg(msg)
 
 # Start Discord client
 client.run(config["bot_token"])
