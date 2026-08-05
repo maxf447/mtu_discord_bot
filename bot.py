@@ -111,7 +111,8 @@ async def on_ready():
 
     # Start chat bridge
     bridge_webhook = discord.SyncWebhook.from_url(config["chat_bridge_webhook"])
-    bridge = chat_bridge.ChatBridge(config["log_file_path"], bridge_webhook, rcon)
+    bridge = chat_bridge.ChatBridge(config["log_file_path"],
+        bridge_webhook, rcon, config["message_filter"])
 
     # Assign chat bridge to on_message event
     @client.event

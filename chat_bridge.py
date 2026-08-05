@@ -5,15 +5,17 @@ import threading
 import re
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
+import discord
 
 class ChatBridge:
     """Class for creating chat bridge"""
 
-    def __init__(self, log_file_path, bridge_webhook, rcon):
+    def __init__(self, log_file_path, bridge_webhook, rcon, msg_filter):
         """Initialize log file listener"""
         self._log_file_path = log_file_path
         self._bridge_webhook = bridge_webhook
         self._rcon = rcon
+        self._msg_filter = msg_filter
 
         # Open log file
         self._log_file = open(self._log_file_path, "r", encoding = "utf-8")
@@ -43,11 +45,49 @@ class ChatBridge:
         # Read new lines in file
         lines = self._log_file.read().split("\n")
         for line in lines:
-            # Skip empty lines
-            if line == "":
-                continue
+            self._parse_line(line)
 
-            self._bridge_webhook.send(line)
+    def _parse_line(self, line):
+        """Parse a logfile line and send a webhook message if necessary"""
+
+        # Skip non-info lines
+        if len(line) < 33 or line[11:31] != "[Server thread/INFO]":
+            return
+
+        msg = line[33:]
+
+        # Message is a chat message from a player
+        if msg[0] == "<" and re.search("<(.*?)>", msg) is not None:
+            # Extract username and message content
+            username = re.search("<(.*?)>", msg).group(1)
+            content = msg.removeprefix(f"<{username}> ")
+            # TODO: avatar URL
+            avatar_url = ""
+            # Send message
+            self._bridge_webhook.send(content, username = username,
+                avatar_url = avatar_url, allowed_mentions = discord.AllowedMentions.none())
+
+        # Message is a message from the server
+        elif msg.startswith("[Server] "):
+            content = msg.removeprefix("[Server] ")
+            self._bridge_webhook.send(content, username = "Server",
+                allowed_mentions = discord.AllowedMentions.none())
+
+        # Message is a /me
+        elif msg.startswith("* "):
+            username = msg.split(" ")[1]
+            content = msg.removeprefix(f"* {username} ")
+            # Escape usernames with Markdown formatting
+            username_clean = username.replace("_", "\\_")
+            self._bridge_webhook.send(f"\\* {username_clean} {content}", username = "Server",
+                allowed_mentions = discord.AllowedMentions.none())
+
+        # Message is a join / leave / advancement / challenge / death message
+        elif len(msg.split(" ")) > 1 and msg.split(" ")[1] in self._msg_filter:
+            # Escape possible Markdown formatting in usernames
+            msg_clean = msg.replace("_", "\\_")
+            self._bridge_webhook.send(msg_clean, username = "Server",
+                allowed_mentions = discord.AllowedMentions.none())
 
     async def discord_msg(self, msg):
         """Discord message in chat bridge channel"""
@@ -68,9 +108,27 @@ class ChatBridge:
             replied_name = replied_msg.author.display_name
             replied_content = replied_msg.clean_content
 
-            msg_tellraw = [
-                {"text": f"┌ [{replied_name}] {replied_content}\n", "color": "gray"}
-            ] + msg_tellraw
+            # Undo Markdown formatting escape if message was a server message
+            replied_content_clean = replied_content.replace("\\_", "_")
+
+            # Message was a normal Discord user or a server message
+            if replied_msg.webhook_id is None or replied_msg.author.display_name == "Server":
+                # Message was a /me
+                if replied_content.startswith("\\* "):
+                    msg_tellraw = [
+                        {"text": f"┌ * {replied_content_clean.removeprefix("\\* ")}\n", "color": "gray"}
+                    ] + msg_tellraw
+
+                else:
+                    msg_tellraw = [
+                        {"text": f"┌ [{replied_name}] {replied_content_clean}\n", "color": "gray"}
+                    ] + msg_tellraw
+
+            # Message was a chat bridged Minecraft user
+            else:
+                msg_tellraw = [
+                    {"text": f"┌ <{replied_name}> {replied_content}\n", "color": "gray"}
+                ] + msg_tellraw   
 
         self._rcon.tellraw(msg_tellraw)
 
