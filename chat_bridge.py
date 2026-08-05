@@ -9,9 +9,11 @@ from watchdog.events import FileSystemEventHandler
 class ChatBridge:
     """Class for creating chat bridge"""
 
-    def __init__(self, log_file_path):
+    def __init__(self, log_file_path, bridge_webhook, rcon):
         """Initialize log file listener"""
         self._log_file_path = log_file_path
+        self._bridge_webhook = bridge_webhook
+        self._rcon = rcon
 
         # Open log file
         self._log_file = open(self._log_file_path, "r", encoding = "utf-8")
@@ -41,11 +43,19 @@ class ChatBridge:
         # Read new lines in file
         lines = self._log_file.read().split("\n")
         for line in lines:
-            print(line)
+            # Skip empty lines
+            if line == "":
+                continue
+
+            self._bridge_webhook.send(line)
 
     def discord_msg(self, msg):
         """Discord message in chat bridge channel"""
-        print(msg)
+        # No bot or empty messages
+        if msg.author.bot or len(msg.clean_content) == 0:
+            return
+
+        self._rcon.tellraw({"text": msg.clean_content})
 
 # Small event handler for file system update
 class Handler(FileSystemEventHandler):

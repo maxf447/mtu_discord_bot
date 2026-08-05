@@ -1,6 +1,7 @@
 """Communicate with the Minecraft server through RCON"""
 
 import re
+import json
 import mcrcon
 
 # Communicates with the Minecraft server via RCON
@@ -27,6 +28,10 @@ class RCONServer:
         if result is None:
             return None
         return float(re.search(r"(?<=tick: )\d+\.\d(?=ms)", result).group(0))
+
+    def tellraw(self, data):
+        """Send a message from tellraw JSON in the chat"""
+        self._run_command("tellraw @a " + json.dumps(data))
 
     # Run command, attempting to reconnect if necessary
     def _run_command(self, command):

@@ -87,10 +87,16 @@ async def status_msg(intr: discord.Interaction):
 tree.add_command(user_group)
 tree.add_command(admin_group)
 
-
+prepared = False
 @client.event
 async def on_ready():
     """Initialize things once bot is loaded"""
+
+    # Don't run more than once
+    global prepared
+    if prepared:
+        return
+    prepared = True
 
     # Register slash commands
     # await tree.sync(guild = discord.Object(id = config["guild_id"]))
@@ -98,13 +104,14 @@ async def on_ready():
     # Get appropriate status channel and webhook
     status_channel = client.get_channel(config["status_channel"])
     status_webhook = discord.Webhook.from_url(
-        config["status_webhook"],session = aiohttp.ClientSession())
+        config["status_webhook"], session = aiohttp.ClientSession())
 
     # Start server status loop
     server_status.start_loop(status_channel, status_webhook)
 
     # Start chat bridge
-    bridge = chat_bridge.ChatBridge(config["log_file_path"])
+    bridge_webhook = discord.SyncWebhook.from_url(config["chat_bridge_webhook"])
+    bridge = chat_bridge.ChatBridge(config["log_file_path"], bridge_webhook, rcon)
 
     # Assign chat bridge to on_message event
     @client.event
