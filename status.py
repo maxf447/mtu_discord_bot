@@ -45,7 +45,7 @@ class Status:
         # No status message found, create a new one
         if self._msg is None:
             msg = await self._webhook.send(None, embed = self._content, username = "Server Status",
-                wait = True, allowed_mentions = discord.AllowedMentions.none())
+                wait = True)
             self._msg = msg.id
 
     def _get_memory(self):

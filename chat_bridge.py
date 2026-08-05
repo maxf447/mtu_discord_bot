@@ -5,7 +5,6 @@ import threading
 import re
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
-import discord
 
 class ChatBridge:
     """Class for creating chat bridge"""
@@ -63,14 +62,12 @@ class ChatBridge:
             content = msg.removeprefix(f"<{username}> ")
             avatar_url = f"https://mc-heads.net/avatar/{username}"
             # Send message
-            self._bridge_webhook.send(content, username = username,
-                avatar_url = avatar_url, allowed_mentions = discord.AllowedMentions.none())
+            self._bridge_webhook.send(content, username = username, avatar_url = avatar_url)
 
         # Message is a message from the server
         elif msg.startswith("[Server] "):
             content = msg.removeprefix("[Server] ")
-            self._bridge_webhook.send(content, username = "Server",
-                allowed_mentions = discord.AllowedMentions.none())
+            self._bridge_webhook.send(content, username = "Server")
 
         # Message is a /me
         elif msg.startswith("* "):
@@ -78,15 +75,13 @@ class ChatBridge:
             content = msg.removeprefix(f"* {username} ")
             # Escape usernames with Markdown formatting
             username_clean = username.replace("_", "\\_")
-            self._bridge_webhook.send(f"\\* {username_clean} {content}", username = "Server",
-                allowed_mentions = discord.AllowedMentions.none())
+            self._bridge_webhook.send(f"\\* {username_clean} {content}", username = "Server")
 
         # Message is a join / leave / advancement / challenge / death message
         elif len(msg.split(" ")) > 1 and msg.split(" ")[1] in self._msg_filter:
             # Escape possible Markdown formatting in usernames
             msg_clean = msg.replace("_", "\\_")
-            self._bridge_webhook.send(msg_clean, username = "Server",
-                allowed_mentions = discord.AllowedMentions.none())
+            self._bridge_webhook.send(msg_clean, username = "Server")
 
         # Special case for this one insane death message
         elif msg == "death.fell.accident.water":

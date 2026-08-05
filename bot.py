@@ -17,7 +17,8 @@ with open(path, "r", encoding = "utf-8") as f:
     config = json.load(f)
 
 # Initialize the Discord bot
-client = discord.Client(intents = discord.Intents.all())
+client = discord.Client(intents = discord.Intents.all(),
+    allowed_mentions = discord.AllowedMentions.none())
 
 # Start RCON communication with the server
 rcon = rcon_server.RCONServer(config["rcon_password"], config["rcon_port"])
@@ -39,7 +40,7 @@ tree = discord.app_commands.CommandTree(client)
 user_group = discord.app_commands.Group(
     name = "whitelist", description = "Whitelist commands")
 admin_group = discord.app_commands.Group(
-    name = "adminwhitelist", description = "Admin whitelist commands")
+    name = "wladmin", description = "Admin whitelist commands")
 
 @user_group.command(name = "add", description = "Add an account to your whitelist")
 async def user_add(intr: discord.Interaction, edition: Literal["Java", "Bedrock"], username: str):
@@ -52,38 +53,79 @@ async def user_add(intr: discord.Interaction, edition: Literal["Java", "Bedrock"
 async def user_remove(intr: discord.Interaction,
     edition: Literal["Java", "Bedrock"], username: str):
     """Remove a user from the whitelist"""
-    print(intr)
-    print(edition)
-    print(username)
+    # Player is whitelisted and owned by Discord user
+    user_id = whitelist.get_discord_user(edition, username)
+    if user_id == intr.user.id:
+        whitelist.remove_from_whitelist(edition, username)
+        await intr.response.send_message(
+            f"{username} ({edition}) has been removed from <@{user_id}>'s whitelist!")
+
+    # Player is owned by a different Discord user
+    elif user_id is not None:
+        await intr.response.send_message(
+            f"{username} ({edition}) was not whitelisted by you!")
+
+    # Player is not whitelisted
+    else:
+        await intr.response.send_message(f"{username} ({edition}) is not whitelisted!",
+            ephemeral = True)
 
 @user_group.command(name = "list", description = "List your whitelist")
 async def user_list(intr: discord.Interaction):
     """List a user's whitelist"""
-    print(intr)
+    players = whitelist.get_whitelist(intr.user)
+    max_whitelist = whitelist.get_max_whitelist(intr.user)
+    msg = f"You have {len(players)}/{max_whitelist} accounts whitelisted"
+    for player in players:
+        msg += f"\n- {whitelist.format(player)}"
+    await intr.response.send_message(msg)
 
-@admin_group.command(name = "add", description = "Add an account to someone's whitelist")
+@admin_group.command(name = "add", description = "Add an account to a user's whitelist")
 async def admin_add(intr: discord.Interaction, user: discord.User,
     edition: Literal["Java", "Bedrock"], username: str):
-    """(Admin) Add a user to a user's whitelist"""
+    """(Admin) Add a player to a user's whitelist"""
     print(intr)
     print(user)
     print(edition)
     print(username)
 
-@admin_group.command(name = "remove", description = "Remove an account from someone's whitelist")
-async def admin_remove(intr: discord.Interaction, user: discord.User,
+@admin_group.command(name = "remove", description = "Remove an account from the whitelist")
+async def admin_remove(intr: discord.Interaction,
     edition: Literal["Java", "Bedrock"], username: str):
-    """(Admin) Remove a user from a user's whitelist"""
-    print(intr)
-    print(user)
-    print(edition)
-    print(username)
+    """(Admin) Remove a player from the whitelist"""
+    # Player is whitelisted
+    user_id = whitelist.get_discord_user(edition, username)
+    if user_id is not None:
+        whitelist.remove_from_whitelist(edition, username)
+        await intr.response.send_message(
+            f"{username} ({edition}) has been removed from <@{user_id}>'s whitelist!")
 
-@admin_group.command(name = "list", description = "List someone's whitelist")
+    # Player is not whitelisted
+    else:
+        await intr.response.send_message(f"{username} ({edition}) is not whitelisted!",
+            ephemeral = True)
+
+@admin_group.command(name = "list", description = "List a user's whitelist")
 async def admin_list(intr: discord.Interaction, user: discord.User):
     """(Admin) List a user's whitelist"""
-    print(intr)
-    print(user)
+    players = whitelist.get_whitelist(user)
+    max_whitelist = whitelist.get_max_whitelist(user)
+    msg = f"<@{user.id}> has {len(players)}/{max_whitelist} accounts whitelisted"
+    for player in players:
+        msg += f"\n- {whitelist.format(player)}"
+    await intr.response.send_message(msg)
+
+@admin_group.command(name = "user", description = "Get the owner of a whitelisted account")
+async def admin_user(intr: discord.Interaction,
+    edition: Literal["Java", "Bedrock"], username: str):
+    """(Admin) Get the Discord user of a whitelisted player"""
+    user_id = whitelist.get_discord_user(edition, username)
+    # Player is whitelisted
+    if user_id is not None:
+        await intr.response.send_message(f"{username} ({edition}) is owned by <@{user_id}>")
+    else:
+        await intr.response.send_message(f"{username} ({edition}) is not whitelisted!",
+            ephemeral = True)
 
 @tree.command(name = "status", description = "Get current server status")
 async def status_msg(intr: discord.Interaction):
@@ -110,7 +152,9 @@ async def on_ready():
     """Initialize things once bot is loaded"""
 
     # Register slash commands
-    # await tree.sync(guild = discord.Object(id = config["guild_id"]))
+    print("Syncing slash commands... ", end = "")
+    await tree.sync()
+    print("Done!")
 
     # Get appropriate status channel and webhook
     status_channel = client.get_channel(config["status_channel"])

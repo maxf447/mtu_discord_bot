@@ -45,10 +45,10 @@ class Whitelist:
                 usernames.append(player["name"])
         return usernames
 
-    def get_discord_user(self, username):
+    def get_discord_user(self, edition, username):
         """Get the Discord user ID a whitelisted player belongs to"""
         for player in self._whitelist_file:
-            if player["name"] == username:
+            if player["name"] == (username if edition == "Java" else "." + username):
                 return player["discord_user"]
         return None
 
@@ -68,13 +68,19 @@ class Whitelist:
             }
         self._update_db()
 
+    def format(self, username):
+        """Format a username which may start with a . to <username> (Java|Bedrock)"""
+        if username.startswith("."):
+            return username.removeprefix(".") + " (Bedrock)"
+        return username + " (Java)"
+
     def _update_db(self):
         """Sync the database to disk"""
         with open(self._whitelist_db_path, "w", encoding = "utf-8") as f:
-            json.dump(self._whitelist_db, f)
+            json.dump(self._whitelist_db, f, indent = 2)
 
     def _update_whitelist(self):
         """Sync the server whitelist to disk and reload on the server"""
         with open(self._whitelist_file_path, "w", encoding = "utf-8") as f:
-            json.dump(self._whitelist_file, f)
+            json.dump(self._whitelist_file, f, indent = 2)
         self._rcon.reload_whitelist()
