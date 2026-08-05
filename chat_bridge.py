@@ -61,8 +61,7 @@ class ChatBridge:
             # Extract username and message content
             username = re.search("<(.*?)>", msg).group(1)
             content = msg.removeprefix(f"<{username}> ")
-            # TODO: avatar URL
-            avatar_url = ""
+            avatar_url = f"https://mc-heads.net/avatar/{username}"
             # Send message
             self._bridge_webhook.send(content, username = username,
                 avatar_url = avatar_url, allowed_mentions = discord.AllowedMentions.none())
@@ -91,7 +90,7 @@ class ChatBridge:
 
         # Special case for this one insane death message
         elif msg == "death.fell.accident.water":
-            self._bridge_webhook.send("death.fell.accident.water", username = "Server")
+            self._bridge_webhook.send(msg, username = "Server")
 
     async def discord_msg(self, msg):
         """Discord message in chat bridge channel"""
@@ -120,7 +119,10 @@ class ChatBridge:
                 # Message was a /me
                 if replied_content.startswith("\\* "):
                     msg_tellraw = [
-                        {"text": f"┌ * {replied_content_clean.removeprefix("\\* ")}\n", "color": "gray"}
+                        {
+                            "text": f"┌ * {replied_content_clean.removeprefix("\\* ")}\n",
+                            "color": "gray"
+                        }
                     ] + msg_tellraw
 
                 else:
@@ -132,7 +134,7 @@ class ChatBridge:
             else:
                 msg_tellraw = [
                     {"text": f"┌ <{replied_name}> {replied_content}\n", "color": "gray"}
-                ] + msg_tellraw   
+                ] + msg_tellraw
 
         self._rcon.tellraw(msg_tellraw)
 

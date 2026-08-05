@@ -87,16 +87,16 @@ async def status_msg(intr: discord.Interaction):
 tree.add_command(user_group)
 tree.add_command(admin_group)
 
-prepared = False
+PREPARED = False
 @client.event
 async def on_ready():
     """Initialize things once bot is loaded"""
 
     # Don't run more than once
-    global prepared
-    if prepared:
+    global PREPARED
+    if PREPARED:
         return
-    prepared = True
+    PREPARED = True
 
     # Register slash commands
     # await tree.sync(guild = discord.Object(id = config["guild_id"]))
