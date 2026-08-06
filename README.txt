@@ -1,0 +1,3 @@
+This is the source code of the Discord bot used to provide server status, chat bridge, and whitelisting functionality for the Minecraft server run by the Minecraft Club at MTU.
+
+This bot was written specifically to fulfill the needs of the club; it was not designed for use by the public, and its code is provided here primarily for transparency. However if it fits your needs it should work well once configured appropriately.
