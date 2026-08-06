@@ -50,7 +50,7 @@ class ChatBridge:
     def _parse_line(self, line):
         """Parse a logfile line and send a webhook message if necessary"""
         # Skip non-info lines
-        if len(line) < 33 or line[11:31] != "[Server thread/INFO]":
+        if len(line) <= 33 or line[11:31] != "[Server thread/INFO]":
             return
 
         msg = line[33:]
