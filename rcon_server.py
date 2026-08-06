@@ -25,7 +25,7 @@ class RCONServer:
     def get_mspt(self):
         """Get the current server MSPT"""
         result = self._run_command("tick query")
-        if result is None:
+        if result is None or re.search(r"(?<=tick: )\d+\.\d(?=ms)", result) is None:
             return None
         return float(re.search(r"(?<=tick: )\d+\.\d(?=ms)", result).group(0))
 
