@@ -49,13 +49,12 @@ async def user_add(intr: discord.Interaction, edition: Literal["Java", "Bedrock"
     slots = whitelist.get_max_whitelist(intr.user)
     used = len(whitelist.get_whitelist(intr.user))
     if used >= slots:
-        await intr.response.send_message(f"Your whitelist is full! ({used}/{slots})",
-            ephemeral = True)
+        await intr.response.send_message(f"Your whitelist is full! ({used}/{slots})")
         return
 
     # Player is already whitelisted
     if whitelist.get_discord_user(edition, username) != (None, None):
-        await intr.response.send_message("Account is already whitelisted!", ephemeral = True)
+        await intr.response.send_message("Account is already whitelisted!")
         return
 
     # Whitelist user
@@ -68,8 +67,7 @@ async def user_add(intr: discord.Interaction, edition: Literal["Java", "Bedrock"
 
     # Fail
     else:
-        await intr.response.send_message(f"{username} ({edition}) does not exist!",
-            ephemeral = True)
+        await intr.response.send_message(f"{username} ({edition}) does not exist!")
 
 @user_group.command(name = "remove", description = "Remove an account from your whitelist")
 async def user_remove(intr: discord.Interaction,
@@ -84,13 +82,11 @@ async def user_remove(intr: discord.Interaction,
 
     # Player is owned by a different Discord user
     elif user_id is not None:
-        await intr.response.send_message(f"{name} ({edition}) was not whitelisted by you!",
-            ephemeral = True)
+        await intr.response.send_message(f"{name} ({edition}) was not whitelisted by you!")
 
     # Player is not whitelisted
     else:
-        await intr.response.send_message(f"{username} ({edition}) is not whitelisted!",
-            ephemeral = True)
+        await intr.response.send_message(f"{username} ({edition}) is not whitelisted!")
 
 @user_group.command(name = "list", description = "List your whitelist")
 async def user_list(intr: discord.Interaction):
@@ -120,8 +116,7 @@ async def admin_add(intr: discord.Interaction, user: discord.User,
 
     # Fail
     else:
-        await intr.response.send_message(f"{username} ({edition}) does not exist!",
-            ephemeral = True)
+        await intr.response.send_message(f"{username} ({edition}) does not exist!")
 
 @admin_group.command(name = "remove", description = "Remove an account from the whitelist")
 async def admin_remove(intr: discord.Interaction,
@@ -142,8 +137,7 @@ async def admin_remove(intr: discord.Interaction,
 
     # Player is not whitelisted
     else:
-        await intr.response.send_message(f"{username} ({edition}) is not whitelisted!",
-            ephemeral = True)
+        await intr.response.send_message(f"{username} ({edition}) is not whitelisted!")
 
 @admin_group.command(name = "list", description = "List a user's whitelist")
 async def admin_list(intr: discord.Interaction, user: discord.User):
@@ -176,8 +170,7 @@ async def admin_user(intr: discord.Interaction,
     if user_id is not None:
         await intr.response.send_message(f"{name} ({edition}) is owned by <@{user_id}>")
     else:
-        await intr.response.send_message(f"{username} ({edition}) is not whitelisted!",
-            ephemeral = True)
+        await intr.response.send_message(f"{username} ({edition}) is not whitelisted!")
 
 @admin_group.command(name = "size", description = "Set the whitelist size for a user")
 async def admin_size(intr: discord.Interaction, user: discord.User, slots: int):
