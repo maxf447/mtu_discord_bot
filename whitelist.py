@@ -31,7 +31,8 @@ class Whitelist:
         # Java edition; use official Minecraft API
         if edition == "Java":
             response = requests.get(
-                f"https://api.minecraftservices.com/minecraft/profile/lookup/name/{username}")
+                f"https://api.minecraftservices.com/minecraft/profile/lookup/name/{username}",
+                timeout = 1)
             if response.status_code != 200:
                 return None # User does not exist
             username = response.json()["name"]
@@ -41,7 +42,8 @@ class Whitelist:
         # Bedrock edition; use a third party API
         else:
             try:
-                response = requests.get(f"https://mc-api.io/profile/{username}/bedrock", timeout = 1)
+                response = requests.get(f"https://mc-api.io/profile/{username}/bedrock",
+                    timeout = 1)
             except requests.exceptions.ReadTimeout:
                 return None
             if response.status_code != 200:
@@ -74,6 +76,7 @@ class Whitelist:
                 self._whitelist_file.remove(player)
                 self._update_whitelist()
                 return player["name"]
+        return None
 
     def get_whitelist(self, user):
         """Get the whitelist of a Discord user"""

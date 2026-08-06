@@ -45,7 +45,6 @@ admin_group = discord.app_commands.Group(
 @user_group.command(name = "add", description = "Add an account to your whitelist")
 async def user_add(intr: discord.Interaction, edition: Literal["Java", "Bedrock"], username: str):
     """Add a user to the whitelist"""
-
     # Whitelist is full
     slots = whitelist.get_max_whitelist(intr.user)
     used = len(whitelist.get_whitelist(intr.user))
@@ -56,8 +55,7 @@ async def user_add(intr: discord.Interaction, edition: Literal["Java", "Bedrock"
 
     # Player is already whitelisted
     if whitelist.get_discord_user(edition, username) != (None, None):
-        await intr.response.send_message(f"Account is already whitelisted!",
-            ephemeral = True)
+        await intr.response.send_message("Account is already whitelisted!", ephemeral = True)
         return
 
     # Whitelist user
@@ -108,7 +106,6 @@ async def user_list(intr: discord.Interaction):
 async def admin_add(intr: discord.Interaction, user: discord.User,
     edition: Literal["Java", "Bedrock"], username: str):
     """(Admin) Add a player to a user's whitelist"""
-
     # User is not an admin
     if intr.user.id not in config["whitelist_admins"]:
         await intr.response.send_message("You are not authorized to run this command!",
@@ -130,7 +127,6 @@ async def admin_add(intr: discord.Interaction, user: discord.User,
 async def admin_remove(intr: discord.Interaction,
     edition: Literal["Java", "Bedrock"], username: str):
     """(Admin) Remove a player from the whitelist"""
-
     # User is not an admin
     if intr.user.id not in config["whitelist_admins"]:
         await intr.response.send_message("You are not authorized to run this command!",
@@ -152,7 +148,6 @@ async def admin_remove(intr: discord.Interaction,
 @admin_group.command(name = "list", description = "List a user's whitelist")
 async def admin_list(intr: discord.Interaction, user: discord.User):
     """(Admin) List a user's whitelist"""
-
     # User is not an admin
     if intr.user.id not in config["whitelist_admins"]:
         await intr.response.send_message("You are not authorized to run this command!",
@@ -170,7 +165,6 @@ async def admin_list(intr: discord.Interaction, user: discord.User):
 async def admin_user(intr: discord.Interaction,
     edition: Literal["Java", "Bedrock"], username: str):
     """(Admin) Get the Discord user of a whitelisted player"""
-
     # User is not an admin
     if intr.user.id not in config["whitelist_admins"]:
         await intr.response.send_message("You are not authorized to run this command!",
@@ -188,7 +182,6 @@ async def admin_user(intr: discord.Interaction,
 @admin_group.command(name = "size", description = "Set the whitelist size for a user")
 async def admin_size(intr: discord.Interaction, user: discord.User, slots: int):
     """(Admin) Set the maximum number of whitelisted accounts a user can have"""
-
     # User is not an admin
     if intr.user.id not in config["whitelist_admins"]:
         await intr.response.send_message("You are not authorized to run this command!",
@@ -214,14 +207,12 @@ tree.add_command(admin_group)
 @client.event
 async def on_message(msg):
     """Pass messages to chat bridge"""
-    # Message is from chat bridge
     if msg.channel.id == config["chat_bridge_channel"]:
         await bridge.discord_msg(msg)
 
 @client.event
 async def on_ready():
     """Initialize things once bot is loaded"""
-
     # Register slash commands
     print("Syncing slash commands... ", end = "")
     await tree.sync()

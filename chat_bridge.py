@@ -49,7 +49,6 @@ class ChatBridge:
 
     def _parse_line(self, line):
         """Parse a logfile line and send a webhook message if necessary"""
-
         # Skip non-info lines
         if len(line) < 33 or line[11:31] != "[Server thread/INFO]":
             return
@@ -116,17 +115,20 @@ class ChatBridge:
                 # Message was a /me
                 if replied_content.startswith("\\* "):
                     msg_tellraw = [
-                        {"text": f"┌ * {replied_content_clean.removeprefix("\\* ")}\n", "color": "gray"}
+                        {"text": f"┌ * {replied_content_clean.removeprefix("\\* ")}\n",
+                        "color": "gray"}
                     ] + msg_tellraw
 
                 # Message was a system message
-                elif replied_msg.author.display_name == "System" and replied_msg.author.avatar is None:
+                elif replied_msg.author.display_name == "System" \
+                    and replied_msg.author.avatar is None:
                     msg_tellraw = [
                         {"text": f"┌ {replied_content_clean}\n", "color": "gray"}
                     ] + msg_tellraw
 
                 # Message was sent by /say from server console
-                elif replied_msg.author.display_name == "Server" and replied_msg.author.avatar is None:
+                elif replied_msg.author.display_name == "Server" \
+                    and replied_msg.author.avatar is None:
                     msg_tellraw = [
                         {"text": f"┌ [Server] {replied_content}\n", "color": "gray"}
                     ] + msg_tellraw
