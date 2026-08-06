@@ -103,7 +103,7 @@ class Status:
         if memory is None:
             description += "\nMemory: [unknown]"
         else:
-            description += f"\nMemory: {memory[1] / 2**20:.1f} GiB / {memory[0] / 2**20:.1f} GiB"
+            description += f"\nMemory: {memory[1] / 2**20:.2f} GiB / {memory[0] / 2**20:.2f} GiB"
 
         # Disk usage
         if disk is None:
@@ -115,7 +115,7 @@ class Status:
         if power is None:
             description += "\nPower: [unknown]"
         else:
-            description += f"\nPower: {power}W"
+            description += f"\nPower: {power:.0f}W"
 
         # Create and return embed
         embed = discord.Embed(title = title, description = description,
