@@ -2,6 +2,7 @@
 
 import json
 import os
+import requests
 
 class Whitelist:
     """Whitelist handler class"""
@@ -26,15 +27,53 @@ class Whitelist:
 
     def add_to_whitelist(self, user, edition, username):
         """Add a player to the whitelist"""
+        # Get user UUID
+        # Java edition; use official Minecraft API
+        if edition == "Java":
+            response = requests.get(
+                f"https://api.minecraftservices.com/minecraft/profile/lookup/name/{username}")
+            if response.status_code != 200:
+                return None # User does not exist
+            username = response.json()["name"]
+            u = response.json()["id"]
+            uuid = f"{u[:8]}-{u[8:12]}-{u[12:16]}-{u[16:20]}-{u[20:]}"
+
+        # Bedrock edition; use a third party API
+        else:
+            try:
+                response = requests.get(f"https://mc-api.io/profile/{username}/bedrock", timeout = 1)
+            except requests.exceptions.ReadTimeout:
+                return None
+            if response.status_code != 200:
+                return None # User does not exist
+            username = response.json()["name"]
+            uuid = response.json()["uuid"]
+
+        # Check if user is already whitelisted and if so update name
+        for player in self._whitelist_file:
+            if player["uuid"] == uuid:
+                player["name"] = ("." if edition == "Bedrock" else "") + username
+                self._update_whitelist()
+                return username
+
+        # Add user to whitelist
+        self._whitelist_file.append({
+            "uuid": uuid,
+            "name": ("." if edition == "Bedrock" else "") + username,
+            "discord_user": user.id
+        })
+        self._update_whitelist()
+        return username
 
     def remove_from_whitelist(self, edition, username):
         """Remove a player from the whitelist"""
         # Find the player in question and remove them
+        name = username.lower()
         for player in self._whitelist_file:
-            if player["name"] == (username if edition == "Java" else "." + username):
+            if player["name"].lower() == (name if edition == "Java" else "." + name):
                 self._whitelist_file.remove(player)
                 self._update_whitelist()
-                return
+                return player["name"]
 
     def get_whitelist(self, user):
         """Get the whitelist of a Discord user"""
@@ -47,23 +86,24 @@ class Whitelist:
 
     def get_discord_user(self, edition, username):
         """Get the Discord user ID a whitelisted player belongs to"""
+        name = username.lower()
         for player in self._whitelist_file:
-            if player["name"] == (username if edition == "Java" else "." + username):
-                return player["discord_user"]
-        return None
+            if player["name"].lower() == (name if edition == "Java" else "." + name):
+                return player["discord_user"], player["name"].removeprefix(".")
+        return None, None
 
     def get_max_whitelist(self, user):
         """Get the max number of players a user is allowed to whitelist"""
-        if user.id in self._whitelist_db:
-            return self._whitelist_db[user.id]["max_whitelist"]
+        if str(user.id) in self._whitelist_db:
+            return self._whitelist_db[str(user.id)]["max_whitelist"]
         return self._max_whitelist
 
     def set_max_whitelist(self, user, n):
         """Set the max number of players a user is allowed to whitelist"""
-        if user.id in self._whitelist_db:
-            self._whitelist_db[user.id]["max_whitelist"] = n
+        if str(user.id) in self._whitelist_db:
+            self._whitelist_db[str(user.id)]["max_whitelist"] = n
         else:
-            self._whitelist_db[user.id] = {
+            self._whitelist_db[str(user.id)] = {
                 "max_whitelist": n
             }
         self._update_db()

@@ -45,25 +45,49 @@ admin_group = discord.app_commands.Group(
 @user_group.command(name = "add", description = "Add an account to your whitelist")
 async def user_add(intr: discord.Interaction, edition: Literal["Java", "Bedrock"], username: str):
     """Add a user to the whitelist"""
-    print(intr)
-    print(edition)
-    print(username)
+
+    # Whitelist is full
+    slots = whitelist.get_max_whitelist(intr.user)
+    used = len(whitelist.get_whitelist(intr.user))
+    if used >= slots:
+        await intr.response.send_message(f"Your whitelist is full! ({used}/{slots})",
+            ephemeral = True)
+        return
+
+    # Player is already whitelisted
+    if whitelist.get_discord_user(edition, username) != (None, None):
+        await intr.response.send_message(f"Account is already whitelisted!",
+            ephemeral = True)
+        return
+
+    # Whitelist user
+    name = whitelist.add_to_whitelist(intr.user, edition, username)
+
+    # Success
+    if name is not None:
+        await intr.response.send_message(
+            f"{name} ({edition}) has been added to your whitelist!")
+
+    # Fail
+    else:
+        await intr.response.send_message(f"{username} ({edition}) does not exist!",
+            ephemeral = True)
 
 @user_group.command(name = "remove", description = "Remove an account from your whitelist")
 async def user_remove(intr: discord.Interaction,
     edition: Literal["Java", "Bedrock"], username: str):
     """Remove a user from the whitelist"""
     # Player is whitelisted and owned by Discord user
-    user_id = whitelist.get_discord_user(edition, username)
+    user_id, name = whitelist.get_discord_user(edition, username)
     if user_id == intr.user.id:
         whitelist.remove_from_whitelist(edition, username)
         await intr.response.send_message(
-            f"{username} ({edition}) has been removed from <@{user_id}>'s whitelist!")
+            f"{name} ({edition}) has been removed from your whitelist!")
 
     # Player is owned by a different Discord user
     elif user_id is not None:
-        await intr.response.send_message(
-            f"{username} ({edition}) was not whitelisted by you!")
+        await intr.response.send_message(f"{name} ({edition}) was not whitelisted by you!",
+            ephemeral = True)
 
     # Player is not whitelisted
     else:
@@ -91,10 +115,16 @@ async def admin_add(intr: discord.Interaction, user: discord.User,
             ephemeral = True)
         return
 
-    print(intr)
-    print(user)
-    print(edition)
-    print(username)
+    name = whitelist.add_to_whitelist(user, edition, username)
+    # Success
+    if name is not None:
+        await intr.response.send_message(
+            f"{name} ({edition}) has been added to <@{user.id}>'s whitelist!")
+
+    # Fail
+    else:
+        await intr.response.send_message(f"{username} ({edition}) does not exist!",
+            ephemeral = True)
 
 @admin_group.command(name = "remove", description = "Remove an account from the whitelist")
 async def admin_remove(intr: discord.Interaction,
@@ -108,11 +138,11 @@ async def admin_remove(intr: discord.Interaction,
         return
 
     # Player is whitelisted
-    user_id = whitelist.get_discord_user(edition, username)
+    user_id, name = whitelist.get_discord_user(edition, username)
     if user_id is not None:
         whitelist.remove_from_whitelist(edition, username)
         await intr.response.send_message(
-            f"{username} ({edition}) has been removed from <@{user_id}>'s whitelist!")
+            f"{name} ({edition}) has been removed from <@{user_id}>'s whitelist!")
 
     # Player is not whitelisted
     else:
@@ -147,13 +177,26 @@ async def admin_user(intr: discord.Interaction,
             ephemeral = True)
         return
 
-    user_id = whitelist.get_discord_user(edition, username)
+    user_id, name = whitelist.get_discord_user(edition, username)
     # Player is whitelisted
     if user_id is not None:
-        await intr.response.send_message(f"{username} ({edition}) is owned by <@{user_id}>")
+        await intr.response.send_message(f"{name} ({edition}) is owned by <@{user_id}>")
     else:
         await intr.response.send_message(f"{username} ({edition}) is not whitelisted!",
             ephemeral = True)
+
+@admin_group.command(name = "size", description = "Set the whitelist size for a user")
+async def admin_size(intr: discord.Interaction, user: discord.User, slots: int):
+    """(Admin) Set the maximum number of whitelisted accounts a user can have"""
+
+    # User is not an admin
+    if intr.user.id not in config["whitelist_admins"]:
+        await intr.response.send_message("You are not authorized to run this command!",
+            ephemeral = True)
+        return
+
+    whitelist.set_max_whitelist(user, slots)
+    await intr.response.send_message(f"<@{user.id}>'s whitelist size set to {slots}")
 
 @tree.command(name = "status", description = "Get current server status")
 async def status_msg(intr: discord.Interaction):

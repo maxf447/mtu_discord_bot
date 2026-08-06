@@ -5,6 +5,7 @@ import threading
 import re
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
+from discord import MessageType
 
 class ChatBridge:
     """Class for creating chat bridge"""
@@ -75,17 +76,17 @@ class ChatBridge:
             content = msg.removeprefix(f"* {username} ")
             # Escape usernames with Markdown formatting
             username_clean = username.replace("_", "\\_")
-            self._bridge_webhook.send(f"\\* {username_clean} {content}", username = "Server")
+            self._bridge_webhook.send(f"\\* {username_clean} {content}", username = "System")
 
         # Message is a join / leave / advancement / challenge / death message
         elif len(msg.split(" ")) > 1 and msg.split(" ")[1] in self._msg_filter:
             # Escape possible Markdown formatting in usernames
             msg_clean = msg.replace("_", "\\_")
-            self._bridge_webhook.send(msg_clean, username = "Server")
+            self._bridge_webhook.send(msg_clean, username = "System")
 
         # Special case for this one insane death message
         elif msg == "death.fell.accident.water":
-            self._bridge_webhook.send(msg, username = "Server")
+            self._bridge_webhook.send(msg, username = "System")
 
     async def discord_msg(self, msg):
         """Discord message in chat bridge channel"""
@@ -109,27 +110,39 @@ class ChatBridge:
             # Undo Markdown formatting escape if message was a server message
             replied_content_clean = replied_content.replace("\\_", "_")
 
-            # Message was a normal Discord user or a server message
-            if replied_msg.webhook_id is None or replied_msg.author.display_name == "Server":
+            # Message was automated
+            if replied_msg.webhook_id is not None and replied_msg.type == MessageType.default:
+                print(replied_msg)
                 # Message was a /me
                 if replied_content.startswith("\\* "):
                     msg_tellraw = [
-                        {
-                            "text": f"┌ * {replied_content_clean.removeprefix("\\* ")}\n",
-                            "color": "gray"
-                        }
+                        {"text": f"┌ * {replied_content_clean.removeprefix("\\* ")}\n", "color": "gray"}
                     ] + msg_tellraw
 
+                # Message was a system message
+                elif replied_msg.author.display_name == "System" and replied_msg.author.avatar is None:
+                    msg_tellraw = [
+                        {"text": f"┌ {replied_content_clean}\n", "color": "gray"}
+                    ] + msg_tellraw
+
+                # Message was sent by /say from server console
+                elif replied_msg.author.display_name == "Server" and replied_msg.author.avatar is None:
+                    msg_tellraw = [
+                        {"text": f"┌ [Server] {replied_content}\n", "color": "gray"}
+                    ] + msg_tellraw
+
+                # Message was a chat bridged Minecraft user
                 else:
                     msg_tellraw = [
-                        {"text": f"┌ [{replied_name}] {replied_content_clean}\n", "color": "gray"}
+                        {"text": f"┌ <{replied_name}> {replied_content}\n", "color": "gray"}
                     ] + msg_tellraw
 
-            # Message was a chat bridged Minecraft user
+            # Message was a Discord user
             else:
                 msg_tellraw = [
-                    {"text": f"┌ <{replied_name}> {replied_content}\n", "color": "gray"}
+                    {"text": f"┌ [{replied_name}] {replied_content_clean}\n", "color": "gray"}
                 ] + msg_tellraw
+
 
         self._rcon.tellraw(msg_tellraw)
 
