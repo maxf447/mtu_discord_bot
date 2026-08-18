@@ -32,12 +32,18 @@ class SpamHandler:
         if len(channels) >= 3:
 
             # Time out user for 15 minutes
-            await msg.author.timeout(datetime.timedelta(minutes = 15),
-                reason = "Automated spam detection")
+            try:
+                await msg.author.timeout(datetime.timedelta(minutes = 15),
+                    reason = "Automated spam detection")
+            except:
+                pass
 
             # Purge all messages with matching hash
             for m in self.history.copy():
                 if m[3] == hashed_msg:
                     obj = self.client.get_partial_messageable(m[2]).get_partial_message(m[1])
                     self.history.remove(m)
-                    await obj.delete()
+                    try:
+                        await obj.delete()
+                    except:
+                        pass
