@@ -10,6 +10,7 @@ import status
 import rcon_server
 import chat_bridge
 import whitelist
+import spam_handler
 
 # Load the bot config file
 path = os.path.join(os.path.dirname(__file__), "config.json")
@@ -34,6 +35,9 @@ bridge = chat_bridge.ChatBridge(config["log_file_path"],
 # Start whitelist service
 whitelist = whitelist.Whitelist(config["whitelist_file_path"], config["whitelist_db_path"],
     config["max_whitelist"], rcon)
+
+# Create spam handler
+spam = spam_handler.SpamHandler(client)
 
 # Create slash commands
 tree = discord.app_commands.CommandTree(client)
@@ -196,10 +200,14 @@ async def status_msg(intr: discord.Interaction):
 tree.add_command(user_group)
 tree.add_command(admin_group)
 
-# Assign chat bridge to on_message event
 @client.event
 async def on_message(msg):
-    """Pass messages to chat bridge"""
+    """Process Discord messages"""
+
+    # Check for spam messages
+    await spam.handle(msg)
+
+    # Send chat bridge messages to chat bridge
     if msg.channel.id == config["chat_bridge_channel"]:
         await bridge.discord_msg(msg)
 
