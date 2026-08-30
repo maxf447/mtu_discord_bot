@@ -5,6 +5,7 @@ import threading
 import re
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
+import discord
 from discord import MessageType
 
 class ChatBridge:
@@ -62,12 +63,14 @@ class ChatBridge:
             content = msg.removeprefix(f"<{username}> ")
             avatar_url = f"https://mc-heads.net/avatar/{username}"
             # Send message
-            self._bridge_webhook.send(content, username = username, avatar_url = avatar_url)
+            self._bridge_webhook.send(content, username = username, avatar_url = avatar_url,
+                allowed_mentions = discord.AllowedMentions.none())
 
         # Message is a message from the server
         elif msg.startswith("[Server] "):
             content = msg.removeprefix("[Server] ")
-            self._bridge_webhook.send(content, username = "Server")
+            self._bridge_webhook.send(content, username = "Server",
+                allowed_mentions = discord.AllowedMentions.none())
 
         # Message is a /me
         elif msg.startswith("* "):
@@ -75,17 +78,20 @@ class ChatBridge:
             content = msg.removeprefix(f"* {username} ")
             # Escape usernames with Markdown formatting
             username_clean = username.replace("_", "\\_")
-            self._bridge_webhook.send(f"\\* {username_clean} {content}", username = "System")
+            self._bridge_webhook.send(f"\\* {username_clean} {content}", username = "System",
+                allowed_mentions = discord.AllowedMentions.none())
 
         # Message is a join / leave / advancement / challenge / death message
         elif len(msg.split(" ")) > 1 and msg.split(" ")[1] in self._msg_filter:
             # Escape possible Markdown formatting in usernames
             msg_clean = msg.replace("_", "\\_")
-            self._bridge_webhook.send(msg_clean, username = "System")
+            self._bridge_webhook.send(msg_clean, username = "System",
+                allowed_mentions = discord.AllowedMentions.none())
 
         # Special case for this one insane death message
         elif msg == "death.fell.accident.water":
-            self._bridge_webhook.send(msg, username = "System")
+            self._bridge_webhook.send(msg, username = "System",
+                allowed_mentions = discord.AllowedMentions.none())
 
     async def discord_msg(self, msg):
         """Discord message in chat bridge channel"""

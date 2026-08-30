@@ -45,7 +45,7 @@ class Status:
         # No status message found, create a new one
         if self._msg is None:
             msg = await self._webhook.send(None, embed = self._content, username = "Server Status",
-                wait = True)
+                wait = True, allowed_mentions = discord.AllowedMentions.none())
             self._msg = msg.id
 
     def _get_memory(self):
@@ -93,7 +93,7 @@ class Status:
             description = f"```\n{'\n'.join(player_list)}```" if len(player_list) > 0 else ""
             color = 0x00FF00
             # Tick time
-            if mspt is None:
+            if mspt is None or mspt == 0:
                 description += "\nTick Time: [unknown]"
             else:
                 tps = min(20, 1000 / mspt)
