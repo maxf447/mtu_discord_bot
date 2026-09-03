@@ -117,7 +117,7 @@ class ChatBridge:
 
             # Message was automated
             if replied_msg.webhook_id is not None and replied_msg.type == MessageType.default:
-                print(replied_msg)
+
                 # Message was a /me
                 if replied_content.startswith("\\* "):
                     msg_tellraw = [

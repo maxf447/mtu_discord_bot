@@ -29,7 +29,7 @@ class Status:
                         content = None, embed = self._content)
 
                 # Get status message if there was an error editing the current one
-                except discord.HTTPException:
+                except:
                     await self._get_msg()
             await asyncio.sleep(10)
 
