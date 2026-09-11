@@ -32,7 +32,7 @@ class Whitelist:
         if edition == "Java":
             response = requests.get(
                 f"https://api.minecraftservices.com/minecraft/profile/lookup/name/{username}",
-                timeout = 1)
+                timeout = 5)
             if response.status_code != 200:
                 return None # User does not exist
             username = response.json()["name"]
@@ -42,14 +42,16 @@ class Whitelist:
         # Bedrock edition; use a third party API
         else:
             try:
-                response = requests.get(f"https://mc-api.io/profile/{username}/bedrock",
-                    timeout = 1)
+                response = requests.get(f"https://bedrockviewer.com/profile/{username}/json",
+                    timeout = 5)
             except requests.exceptions.ReadTimeout:
                 return None
-            if response.status_code != 200:
+            if response.status_code != 200 or "XUID" not in response.json():
                 return None # User does not exist
-            username = response.json()["name"]
-            uuid = response.json()["uuid"]
+            username = response.json()["Gamertag"]
+            xuid = response.json()["XUID"]
+            u = hex(int(xuid)).removeprefix("0x").zfill(32)
+            uuid = f"{u[0:8]}-{u[8:12]}-{u[12:16]}-{u[16:20]}-{u[20:32]}"
 
         # Check if user is already whitelisted and if so update name
         for player in self._whitelist_file:

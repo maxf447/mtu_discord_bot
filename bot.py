@@ -62,16 +62,17 @@ async def user_add(intr: discord.Interaction, edition: Literal["Java", "Bedrock"
         return
 
     # Whitelist user
+    await intr.response.defer()
     name = whitelist.add_to_whitelist(intr.user, edition, username)
 
     # Success
     if name is not None:
-        await intr.response.send_message(
-            f"{name} ({edition}) has been added to your whitelist!")
+        await intr.edit_original_response(
+            content = f"{name} ({edition}) has been added to your whitelist!")
 
     # Fail
     else:
-        await intr.response.send_message(f"{username} ({edition}) does not exist!")
+        await intr.edit_original_response(content = f"{username} ({edition}) does not exist!")
 
 @user_group.command(name = "remove", description = "Remove an account from your whitelist")
 async def user_remove(intr: discord.Interaction,
@@ -112,15 +113,16 @@ async def admin_add(intr: discord.Interaction, user: discord.User,
             ephemeral = True)
         return
 
+    await intr.response.defer()
     name = whitelist.add_to_whitelist(user, edition, username)
     # Success
     if name is not None:
-        await intr.response.send_message(
-            f"{name} ({edition}) has been added to <@{user.id}>'s whitelist!")
+        await intr.edit_original_response(
+            content = f"{name} ({edition}) has been added to <@{user.id}>'s whitelist!")
 
     # Fail
     else:
-        await intr.response.send_message(f"{username} ({edition}) does not exist!")
+        await intr.edit_original_response(content = f"{username} ({edition}) does not exist!")
 
 @admin_group.command(name = "remove", description = "Remove an account from the whitelist")
 async def admin_remove(intr: discord.Interaction,
