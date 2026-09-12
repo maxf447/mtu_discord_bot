@@ -14,6 +14,19 @@ class SpamHandler:
     async def handle(self, msg):
         """Handle a message and act appropriately if spam"""
 
+        # Giving away laptop scam, delete message and time out user for 24 hours
+        if "MacBook Air" in msg.content and "DM IF YOU ARE INTERESTED" in msg.content:
+            try:
+                await msg.author.timeout(datetime.timedelta(days = 1),
+                    reason = "Automated spam detection")
+            except:
+                pass
+            try:
+                await msg.delete()
+            except:
+                pass
+            return
+
         # Create hash of (content, author, attachments) and add to history
         hashed_msg = hash((msg.content, msg.author.id, tuple(a.size for a in msg.attachments)))
         self.history.append((time.time(), msg.id, msg.channel.id, hashed_msg))
