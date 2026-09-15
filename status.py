@@ -40,13 +40,19 @@ class Status:
         async for msg in self._channel.history():
             if msg.webhook_id == self._webhook.id:
                 self._msg = msg.id
-                await self._webhook.edit_message(self._msg, content = None, embed = self._content)
+                try:
+                    await self._webhook.edit_message(self._msg, content = None, embed = self._content)
+                except:
+                    pass
 
         # No status message found, create a new one
         if self._msg is None:
-            msg = await self._webhook.send(None, embed = self._content, username = "Server Status",
-                wait = True, allowed_mentions = discord.AllowedMentions.none())
-            self._msg = msg.id
+            try:
+                msg = await self._webhook.send(None, embed = self._content, username = "Server Status",
+                    wait = True, allowed_mentions = discord.AllowedMentions.none())
+                self._msg = msg.id
+            except:
+                pass
 
     def _get_memory(self):
         """Get total and in use memory"""

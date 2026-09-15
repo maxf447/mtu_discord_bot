@@ -46,7 +46,10 @@ class ChatBridge:
         # Read new lines in file
         lines = self._log_file.read().split("\n")
         for line in lines:
-            self._parse_line(line)
+            try:
+                self._parse_line(line)
+            except:
+                pass
 
     def _parse_line(self, line):
         """Parse a logfile line and send a webhook message if necessary"""
