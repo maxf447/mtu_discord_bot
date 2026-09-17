@@ -46,10 +46,7 @@ class ChatBridge:
         # Read new lines in file
         lines = self._log_file.read().split("\n")
         for line in lines:
-            try:
-                self._parse_line(line)
-            except:
-                pass
+            self._parse_line(line)
 
     def _parse_line(self, line):
         """Parse a logfile line and send a webhook message if necessary"""
@@ -167,4 +164,7 @@ class Handler(FileSystemEventHandler):
     def on_modified(self, event):
         """Check if modified file is log file path"""
         if not event.is_directory:
-            self._file_callback(event)
+            try:
+                self._file_callback(event)
+            except:
+                pass

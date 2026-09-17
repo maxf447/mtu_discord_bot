@@ -20,17 +20,20 @@ class Status:
     async def _update_loop(self):
         """Runs the loop to update the status message"""
         while True:
-            # Generate status message and update if necessary
-            content = self.get_status()
-            if content != self._content:
-                self._content = content
-                try:
-                    await self._webhook.edit_message(self._msg,
-                        content = None, embed = self._content)
+            try:
+                # Generate status message and update if necessary
+                content = self.get_status()
+                if content != self._content:
+                    self._content = content
+                    try:
+                        await self._webhook.edit_message(self._msg,
+                            content = None, embed = self._content)
 
-                # Get status message if there was an error editing the current one
-                except:
-                    await self._get_msg()
+                    # Get status message if there was an error editing the current one
+                    except:
+                        await self._get_msg()
+            except:
+                pass
             await asyncio.sleep(10)
 
     async def _get_msg(self):
@@ -40,19 +43,13 @@ class Status:
         async for msg in self._channel.history():
             if msg.webhook_id == self._webhook.id:
                 self._msg = msg.id
-                try:
-                    await self._webhook.edit_message(self._msg, content = None, embed = self._content)
-                except:
-                    pass
+                await self._webhook.edit_message(self._msg, content = None, embed = self._content)
 
         # No status message found, create a new one
         if self._msg is None:
-            try:
-                msg = await self._webhook.send(None, embed = self._content, username = "Server Status",
-                    wait = True, allowed_mentions = discord.AllowedMentions.none())
-                self._msg = msg.id
-            except:
-                pass
+            msg = await self._webhook.send(None, embed = self._content, username = "Server Status",
+                wait = True, allowed_mentions = discord.AllowedMentions.none())
+            self._msg = msg.id
 
     def _get_memory(self):
         """Get total and in use memory"""
