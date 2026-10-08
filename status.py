@@ -31,9 +31,9 @@ class Status:
 
                 # Attempt to send serial data
                 try:
-                    serial = serial.Serial("/dev/ttyACM0", timeout = 0.1)
-                    serial.write(serial_data)
-                    assert(serial.read() == 0x69)
+                    s = serial.Serial("/dev/ttyACM0", timeout = 0.1)
+                    s.write(serial_data)
+                    assert(s.read() == 0x69)
                 except:
                     pass
 
@@ -46,7 +46,7 @@ class Status:
                     await self._get_msg()
             except:
                 pass
-            await asyncio.sleep(10)
+            await asyncio.sleep(5)
 
     async def _get_msg(self):
         """Get status message if it exists, or create a new one"""
@@ -155,19 +155,19 @@ class Status:
         embed.set_footer(text = "Last Updated")
 
         # Create serial data
-        serial = struct.pack("<BIIII?IB",
-            int(cpu * 100),
-            int(memory[0] / 2 ** 10),
-            int(memory[1] / 2 ** 10),
-            int(disk[0] / 2 ** 10),
-            int(disk[1] / 2 ** 10),
+        serial = struct.pack("<HIIII?IB",
+            int(cpu * 1000) if cpu is not None else 0,
+            int(memory[0] / 2 ** 10) if memory is not None else 0,
+            int(memory[1] / 2 ** 10) if memory is not None else 0,
+            int(disk[0] / 2 ** 10) if disk is not None else 0,
+            int(disk[1] / 2 ** 10) if disk is not None else 0,
             player_list is not None,
-            int(mspt * 1000),
-            len(player_list)
+            int(mspt * 1000) if mspt is not None else 0,
+            len(player_list) if player_list is not None else 0
         )
-        for player in player_list:
-            serial += bytes(player, encoding = "ascii") + b'\x00'
-
+        if player_list is not None:
+            for player in player_list:
+                serial += bytes(player, encoding = "ascii") + b'\x00'
         return embed, serial
 
     def start_loop(self, status_channel, status_webhook):
