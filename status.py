@@ -3,7 +3,9 @@
 import asyncio
 import datetime
 import subprocess
+import struct
 import discord
+import serial
 
 class Status:
     """Class to fetch and update status messages"""
@@ -14,9 +16,9 @@ class Status:
         self._channel = None
         self._webhook = None
         self._msg = None
-        self._content = None
         self._started = False
 
+        # CPU info
         self._cpu_idle = None
         self._cpu_total = None
 
@@ -24,17 +26,24 @@ class Status:
         """Runs the loop to update the status message"""
         while True:
             try:
-                # Generate status message and update if necessary
-                content = self.get_status()
-                if content != self._content:
-                    self._content = content
-                    try:
-                        await self._webhook.edit_message(self._msg,
-                            content = None, embed = self._content)
+                # Generate status message and serial data
+                embed, serial_data = self.get_status()
 
-                    # Get status message if there was an error editing the current one
-                    except:
-                        await self._get_msg()
+                # Attempt to send serial data
+                try:
+                    serial = serial.Serial("/dev/ttyACM0", timeout = 0.1)
+                    serial.write(serial_data)
+                    assert(serial.read() == 0x69)
+                except:
+                    pass
+
+                # Attempt to edit status message
+                try:
+                    await self._webhook.edit_message(self._msg,
+                        content = None, embed = embed)
+                # Get status message if there was an error editing the current one
+                except:
+                    await self._get_msg()
             except:
                 pass
             await asyncio.sleep(10)
@@ -140,11 +149,26 @@ class Status:
         else:
             description += f"\nDisk: {disk[1] / 2**20:.1f} GiB / {disk[0] / 2**20:.1f} GiB"
 
-        # Create and return embed
+        # Create embed
         embed = discord.Embed(title = title, description = description,
             timestamp = datetime.datetime.now(), color = color)
         embed.set_footer(text = "Last Updated")
-        return embed
+
+        # Create serial data
+        serial = struct.pack("<BIIII?IB",
+            int(cpu * 100),
+            int(memory[0] / 2 ** 10),
+            int(memory[1] / 2 ** 10),
+            int(disk[0] / 2 ** 10),
+            int(disk[1] / 2 ** 10),
+            player_list is not None,
+            int(mspt * 1000),
+            len(player_list)
+        )
+        for player in player_list:
+            serial += bytes(player, encoding = "ascii") + b'\x00'
+
+        return embed, serial
 
     def start_loop(self, status_channel, status_webhook):
         """Start running the async loop that updates the status"""
