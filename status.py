@@ -17,6 +17,9 @@ class Status:
         self._content = None
         self._started = False
 
+        self._cpu_idle = None
+        self._cpu_total = None
+
     async def _update_loop(self):
         """Runs the loop to update the status message"""
         while True:
@@ -51,6 +54,31 @@ class Status:
                 wait = True, allowed_mentions = discord.AllowedMentions.none())
             self._msg = msg.id
 
+    def _get_cpu(self):
+        """Get CPU usage since last call"""
+        try:
+            # Read total CPU time
+            with open("/proc/stat", "r") as f:
+                data = f.readline().removeprefix("cpu").strip()
+                nums = [int(n) for n in data.split(" ")]
+                idle = nums[3]
+                total = sum(nums)
+
+                # CPU time has not been previously set, return None
+                if self._cpu_idle is None:
+                    usage = None
+                # CPU time has been previously set, calculate usage delta since last
+                else:
+                    usage = 1 - (idle - self._cpu_idle) / (total - self._cpu_total)
+
+            # Set CPU times
+            self._cpu_idle = idle
+            self._cpu_total = total
+            return usage
+
+        except:
+            return None
+
     def _get_memory(self):
         """Get total and in use memory"""
         try:
@@ -73,6 +101,7 @@ class Status:
         """Generate an embed with the server status information"""
         player_list = self._rcon.get_players()
         mspt = self._rcon.get_mspt()
+        cpu = self._get_cpu()
         memory = self._get_memory()
         disk = self._get_disk()
 
@@ -92,6 +121,12 @@ class Status:
             else:
                 tps = min(20, 1000 / mspt)
                 description += f"\nTick Time: {mspt:.1f} ms / 50.0 ms ({tps:.1f} TPS)"
+
+        # CPU usage
+        if cpu is None:
+            description += "\nCPU Usage: [unknown]"
+        else:
+            description += f"\nCPU Usage: {cpu * 100:.1f}%"
 
         # Memory usage
         if memory is None:
