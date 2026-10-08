@@ -69,21 +69,12 @@ class Status:
         except (IndexError, ValueError):
             return None
 
-    def _get_power(self):
-        """Get current power draw from the server's 900W UPS"""
-        try:
-            output = subprocess.getoutput("/usr/sbin/apcaccess status | grep LOADPCT")
-            return float(output.split(" ")[3]) * 900 / 100
-        except (IndexError, ValueError):
-            return None
-
     def get_status(self):
         """Generate an embed with the server status information"""
         player_list = self._rcon.get_players()
         mspt = self._rcon.get_mspt()
         memory = self._get_memory()
         disk = self._get_disk()
-        power = self._get_power()
 
         # Generate status message
         # Player list
@@ -113,12 +104,6 @@ class Status:
             description += "\nDisk: [unknown]"
         else:
             description += f"\nDisk: {disk[1] / 2**20:.1f} GiB / {disk[0] / 2**20:.1f} GiB"
-
-        # Power usage
-        if power is None:
-            description += "\nPower: [unknown]"
-        else:
-            description += f"\nPower: {power:.0f}W"
 
         # Create and return embed
         embed = discord.Embed(title = title, description = description,
